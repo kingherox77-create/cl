@@ -1,111 +1,127 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const passport = require('passport');
-const DiscordStrategy = require('passport-discord').Strategy;
 const axios = require('axios');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Storage em memória (simples e funciona)
-const userTokens = new Map();
+// Storage em memória
+const users = new Map();
+const tokens = new Map();
 
-// Middlewares ESSENCIAIS
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session config - SIMPLES
+// Session config - CORRIGIDA
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'chave-muito-secreta-aqui-123456',
-    resave: true,  // ALTERADO: true para melhor compatibilidade
-    saveUninitialized: true,  // ALTERADO: true
-    cookie: { 
-        secure: false,  // ALTERADO: false para desenvolvimento
-        maxAge: 30 * 24 * 60 * 60 * 1000
+    secret: process.env.SESSION_SECRET || 'chave-super-secreta-muito-longa-12345',
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        sameSite: 'lax'
     }
 }));
-
-// Passport config
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Configure Passport - VERSÃO SIMPLIFICADA
-passport.use(new DiscordStrategy({
-    clientID: process.env.DISCORD_CLIENT_ID,
-    clientSecret: process.env.DISCORD_CLIENT_SECRET,
-    callbackURL: process.env.CALLBACK_URL,
-    scope: ['identify']
-}, (accessToken, refreshToken, profile, done) => {
-    console.log('🔐 Login recebido do Discord:', profile.username);
-    return done(null, profile);
-}));
-
-// Serialização MUITO SIMPLES
-passport.serializeUser((user, done) => {
-    console.log('💾 Salvando sessão do usuário:', user.id);
-    done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-    console.log('🔍 Carregando usuário da sessão:', user?.id);
-    done(null, user);
-});
 
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// ========== ROTAS ========== //
+// ========== ROTAS SIMPLIFICADAS ========== //
 
 // Rota principal
 app.get('/', (req, res) => {
-    if (req.isAuthenticated()) {
+    if (req.session.user) {
         return res.redirect('/dashboard');
     }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Login Discord
-app.get('/auth/discord', passport.authenticate('discord'));
+// Login Discord - Redireciona direto para o Discord
+app.get('/auth/discord', (req, res) => {
+    const discordAuthURL = `https://discord.com/api/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.CALLBACK_URL)}&response_type=code&scope=identify`;
+    res.redirect(discordAuthURL);
+});
 
-// Callback Discord - VERSÃO CORRIGIDA
-app.get('/auth/discord/callback',
-    passport.authenticate('discord', { 
-        failureRedirect: '/?error=auth_failed'
-    }),
-    (req, res) => {
-        console.log('✅ Login BEM-SUCEDIDO, redirecionando...');
-        // Redirecionamento DIRETO sem lógica complexa
+// Callback do Discord - MANUAL (sem Passport)
+app.get('/auth/discord/callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+        
+        if (!code) {
+            return res.redirect('/?error=no_code');
+        }
+
+        // Trocar code por access token
+        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token',
+            new URLSearchParams({
+                client_id: process.env.DISCORD_CLIENT_ID,
+                client_secret: process.env.DISCORD_CLIENT_SECRET,
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: process.env.CALLBACK_URL,
+                scope: 'identify'
+            }),
+            {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            }
+        );
+
+        const accessToken = tokenResponse.data.access_token;
+
+        // Buscar dados do usuário
+        const userResponse = await axios.get('https://discord.com/api/users/@me', {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        });
+
+        const userData = userResponse.data;
+        
+        // Salvar usuário na sessão
+        req.session.user = {
+            id: userData.id,
+            username: userData.username,
+            discriminator: userData.discriminator,
+            avatar: userData.avatar
+        };
+
+        console.log('✅ Login bem-sucedido:', userData.username);
+
+        // Redirecionar para dashboard
         res.redirect('/dashboard');
-    }
-);
 
-// Dashboard - VERIFICAÇÃO SIMPLES
+    } catch (error) {
+        console.error('❌ Erro no callback:', error.response?.data || error.message);
+        res.redirect('/?error=auth_failed');
+    }
+});
+
+// Dashboard
 app.get('/dashboard', (req, res) => {
-    console.log('📊 Tentando acessar dashboard...');
-    console.log('Usuário autenticado?', req.isAuthenticated());
-    console.log('Dados do usuário:', req.user);
-    
-    if (!req.isAuthenticated()) {
-        console.log('❌ Não autenticado, redirecionando...');
+    if (!req.session.user) {
         return res.redirect('/');
     }
-    
-    const userToken = userTokens.get(req.user.id);
-    
-    console.log('✅ Renderizando dashboard para:', req.user.username);
+
+    const userToken = tokens.get(req.session.user.id);
+
     res.render('dashboard', {
-        user: req.user,
+        user: req.session.user,
         token: userToken || null
     });
 });
 
 // Salvar Token
 app.post('/save-token', (req, res) => {
-    if (!req.isAuthenticated()) {
+    if (!req.session.user) {
         return res.status(401).json({ error: 'Não autenticado' });
     }
 
@@ -114,8 +130,7 @@ app.post('/save-token', (req, res) => {
         return res.status(400).json({ error: 'Token é obrigatório' });
     }
 
-    console.log('💾 Salvando token para:', req.user.username);
-    userTokens.set(req.user.id, token);
+    tokens.set(req.session.user.id, token);
     
     res.json({ 
         success: true, 
@@ -125,12 +140,12 @@ app.post('/save-token', (req, res) => {
 
 // Limpar DM
 app.post('/clear-dm', async (req, res) => {
-    if (!req.isAuthenticated()) {
+    if (!req.session.user) {
         return res.status(401).json({ error: 'Não autenticado' });
     }
 
     const { channelId } = req.body;
-    const userToken = userTokens.get(req.user.id);
+    const userToken = tokens.get(req.session.user.id);
 
     if (!channelId) {
         return res.status(400).json({ error: 'Channel ID é obrigatório' });
@@ -141,8 +156,6 @@ app.post('/clear-dm', async (req, res) => {
     }
 
     try {
-        console.log('🧹 Iniciando limpeza para canal:', channelId);
-        
         const response = await axios.get(`https://discord.com/api/v9/channels/${channelId}/messages`, {
             headers: {
                 'Authorization': userToken
@@ -153,7 +166,7 @@ app.post('/clear-dm', async (req, res) => {
         let deletedCount = 0;
 
         for (const message of messages) {
-            if (message.author.id === req.user.id) {
+            if (message.author.id === req.session.user.id) {
                 try {
                     await axios.delete(`https://discord.com/api/v9/channels/${channelId}/messages/${message.id}`, {
                         headers: {
@@ -186,13 +199,10 @@ app.post('/clear-dm', async (req, res) => {
 
 // Logout
 app.get('/logout', (req, res) => {
-    console.log('🚪 Logout:', req.user?.username);
-    
-    if (req.user) {
-        userTokens.delete(req.user.id);
+    if (req.session.user) {
+        tokens.delete(req.session.user.id);
     }
-    
-    req.logout(() => {
+    req.session.destroy((err) => {
         res.redirect('/');
     });
 });
@@ -200,24 +210,20 @@ app.get('/logout', (req, res) => {
 // Health check
 app.get('/health', (req, res) => {
     res.json({ 
-        status: 'OK', 
-        authenticated: req.isAuthenticated(),
-        user: req.user ? req.user.username : 'Não logado'
+        status: 'OK',
+        user: req.session.user ? req.session.user.username : 'Não logado'
     });
 });
 
-// Debug route
+// Debug session
 app.get('/debug-session', (req, res) => {
     res.json({
-        isAuthenticated: req.isAuthenticated(),
-        user: req.user,
+        user: req.session.user,
         sessionID: req.sessionID,
-        session: req.session
+        hasToken: req.session.user ? tokens.has(req.session.user.id) : false
     });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`🏠 Local: http://localhost:${PORT}`);
-    console.log(`🌐 Produção: ${process.env.CALLBACK_URL?.replace('/auth/discord/callback', '')}`);
 });
