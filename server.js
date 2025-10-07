@@ -9,23 +9,22 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuração simples em memória (substitui SQLite por enquanto)
-const userStorage = new Map();
-const tokenStorage = new Map();
+// Storage em memória (simples e funciona)
+const userTokens = new Map();
 
-// Middlewares
+// Middlewares ESSENCIAIS
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session config - 30 DIAS
+// Session config - SIMPLES
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret-very-long-key-here-12345',
-    resave: false,
-    saveUninitialized: false,
+    secret: process.env.SESSION_SECRET || 'chave-muito-secreta-aqui-123456',
+    resave: true,  // ALTERADO: true para melhor compatibilidade
+    saveUninitialized: true,  // ALTERADO: true
     cookie: { 
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 dias
+        secure: false,  // ALTERADO: false para desenvolvimento
+        maxAge: 30 * 24 * 60 * 60 * 1000
     }
 }));
 
@@ -33,25 +32,25 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configure Passport
+// Configure Passport - VERSÃO SIMPLIFICADA
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
     callbackURL: process.env.CALLBACK_URL,
     scope: ['identify']
 }, (accessToken, refreshToken, profile, done) => {
-    console.log('🔐 Login Discord:', profile.username);
+    console.log('🔐 Login recebido do Discord:', profile.username);
     return done(null, profile);
 }));
 
-// Serialização SIMPLIFICADA
+// Serialização MUITO SIMPLES
 passport.serializeUser((user, done) => {
-    console.log('💾 Serializando usuário:', user.id);
+    console.log('💾 Salvando sessão do usuário:', user.id);
     done(null, user);
 });
 
 passport.deserializeUser((user, done) => {
-    console.log('🔍 Desserializando usuário:', user?.id);
+    console.log('🔍 Carregando usuário da sessão:', user?.id);
     done(null, user);
 });
 
@@ -59,58 +58,45 @@ passport.deserializeUser((user, done) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// ========== MIDDLEWARE DE LOG ========== //
-app.use((req, res, next) => {
-    console.log('📨 Rota:', req.path, '| Usuário:', req.user?.username || 'Não logado');
-    next();
-});
-
 // ========== ROTAS ========== //
 
 // Rota principal
 app.get('/', (req, res) => {
-    console.log('🏠 Página principal - Usuário:', req.user?.username || 'Não logado');
+    if (req.isAuthenticated()) {
+        return res.redirect('/dashboard');
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Login Discord
 app.get('/auth/discord', passport.authenticate('discord'));
 
-// Callback Discord
+// Callback Discord - VERSÃO CORRIGIDA
 app.get('/auth/discord/callback',
     passport.authenticate('discord', { 
-        failureRedirect: '/',
-        failureMessage: true 
+        failureRedirect: '/?error=auth_failed'
     }),
     (req, res) => {
-        console.log('✅ Login bem-sucedido:', req.user.username);
-        
-        // Salvar usuário no storage
-        userStorage.set(req.user.id, {
-            ...req.user,
-            isAuthenticated: true
-        });
-        
+        console.log('✅ Login BEM-SUCEDIDO, redirecionando...');
+        // Redirecionamento DIRETO sem lógica complexa
         res.redirect('/dashboard');
     }
 );
 
-// Middleware para verificar autenticação
-const requireAuth = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        console.log('✅ Usuário autenticado:', req.user.username);
-        return next();
+// Dashboard - VERIFICAÇÃO SIMPLES
+app.get('/dashboard', (req, res) => {
+    console.log('📊 Tentando acessar dashboard...');
+    console.log('Usuário autenticado?', req.isAuthenticated());
+    console.log('Dados do usuário:', req.user);
+    
+    if (!req.isAuthenticated()) {
+        console.log('❌ Não autenticado, redirecionando...');
+        return res.redirect('/');
     }
-    console.log('❌ Usuário não autenticado - Redirecionando para /');
-    res.redirect('/');
-};
-
-// Dashboard
-app.get('/dashboard', requireAuth, (req, res) => {
-    const userToken = tokenStorage.get(req.user.id);
     
-    console.log('📊 Dashboard carregado para:', req.user.username, '| Token:', !!userToken);
+    const userToken = userTokens.get(req.user.id);
     
+    console.log('✅ Renderizando dashboard para:', req.user.username);
     res.render('dashboard', {
         user: req.user,
         token: userToken || null
@@ -118,42 +104,45 @@ app.get('/dashboard', requireAuth, (req, res) => {
 });
 
 // Salvar Token
-app.post('/save-token', requireAuth, (req, res) => {
+app.post('/save-token', (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Não autenticado' });
+    }
+
     const { token } = req.body;
-    
     if (!token) {
         return res.status(400).json({ error: 'Token é obrigatório' });
     }
 
     console.log('💾 Salvando token para:', req.user.username);
-    
-    // Salvar token no storage
-    tokenStorage.set(req.user.id, token);
+    userTokens.set(req.user.id, token);
     
     res.json({ 
         success: true, 
-        message: 'Token salvo com sucesso! Você não precisará digitar novamente.' 
+        message: 'Token salvo com sucesso!' 
     });
 });
 
 // Limpar DM
-app.post('/clear-dm', requireAuth, async (req, res) => {
+app.post('/clear-dm', async (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Não autenticado' });
+    }
+
     const { channelId } = req.body;
+    const userToken = userTokens.get(req.user.id);
 
     if (!channelId) {
         return res.status(400).json({ error: 'Channel ID é obrigatório' });
     }
 
-    const userToken = tokenStorage.get(req.user.id);
-
     if (!userToken) {
-        return res.status(400).json({ error: 'Token não encontrado. Configure primeiro na aba de token.' });
+        return res.status(400).json({ error: 'Token não configurado' });
     }
 
-    console.log('🧹 Iniciando limpeza para:', req.user.username, '| Canal:', channelId);
-
     try {
-        // Buscar mensagens
+        console.log('🧹 Iniciando limpeza para canal:', channelId);
+        
         const response = await axios.get(`https://discord.com/api/v9/channels/${channelId}/messages`, {
             headers: {
                 'Authorization': userToken
@@ -163,7 +152,6 @@ app.post('/clear-dm', requireAuth, async (req, res) => {
         const messages = response.data;
         let deletedCount = 0;
 
-        // Deletar mensagens do usuário
         for (const message of messages) {
             if (message.author.id === req.user.id) {
                 try {
@@ -174,17 +162,14 @@ app.post('/clear-dm', requireAuth, async (req, res) => {
                     });
                     deletedCount++;
                     
-                    // Rate limit
                     await new Promise(resolve => 
                         setTimeout(resolve, Math.random() * 1600 + 400)
                     );
                 } catch (error) {
-                    console.error('❌ Erro ao deletar mensagem:', error.message);
+                    console.error('Erro ao deletar mensagem:', error.message);
                 }
             }
         }
-        
-        console.log('✅ Limpeza concluída:', deletedCount, 'mensagens');
         
         res.json({ 
             success: true, 
@@ -192,53 +177,47 @@ app.post('/clear-dm', requireAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro ao limpar DM:', error.message);
+        console.error('Erro ao limpar DM:', error.message);
         res.status(500).json({ 
-            error: 'Erro ao limpar DM. Token pode estar inválido.' 
+            error: 'Erro ao limpar DM. Verifique o token e o channel ID.' 
         });
     }
 });
 
 // Logout
 app.get('/logout', (req, res) => {
-    console.log('🚪 Logout:', req.user?.username || 'Unknown');
+    console.log('🚪 Logout:', req.user?.username);
     
     if (req.user) {
-        userStorage.delete(req.user.id);
-        tokenStorage.delete(req.user.id);
+        userTokens.delete(req.user.id);
     }
     
-    req.logout((err) => {
-        if (err) {
-            console.error('❌ Erro no logout:', err);
-        }
+    req.logout(() => {
         res.redirect('/');
     });
 });
 
 // Health check
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
+    res.json({ 
         status: 'OK', 
-        message: 'Servidor funcionando',
-        user: req.user ? 'Logado: ' + req.user.username : 'Não logado'
-    });
-});
-
-// Rota de debug
-app.get('/debug', (req, res) => {
-    res.json({
         authenticated: req.isAuthenticated(),
-        user: req.user,
-        session: req.session,
-        users: Array.from(userStorage.keys()),
-        tokens: Array.from(tokenStorage.keys())
+        user: req.user ? req.user.username : 'Não logado'
     });
 });
 
-// Iniciar servidor
+// Debug route
+app.get('/debug-session', (req, res) => {
+    res.json({
+        isAuthenticated: req.isAuthenticated(),
+        user: req.user,
+        sessionID: req.sessionID,
+        session: req.session
+    });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`🏠 URL: http://localhost:${PORT}`);
-    console.log(`🔐 Callback: ${process.env.CALLBACK_URL}`);
+    console.log(`🏠 Local: http://localhost:${PORT}`);
+    console.log(`🌐 Produção: ${process.env.CALLBACK_URL?.replace('/auth/discord/callback', '')}`);
 });
