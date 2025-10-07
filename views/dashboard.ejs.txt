@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - HeroxCL</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title glitch" data-text="DASHBOARD">DASHBOARD</h1>
+            <p class="subtitle">DA CL PORRA KRLH!</p>
+        </div>
+
+        <div class="cyber-card user-info">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <img src="<%= user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : '/default-avatar.png' %>" 
+                     alt="Avatar" class="user-avatar">
+                <div>
+                    <h2>Bem-vindo, <%= user.username %>#<%= user.discriminator %></h2>
+                    <p>ID: <%= user.id %></p>
+                </div>
+            </div>
+            <a href="/logout" class="cyber-button logout-btn">
+                <span>LOGOUT</span>
+                <div class="cyber-button__glow"></div>
+            </a>
+        </div>
+
+        <div class="dashboard-container">
+            <div class="cyber-card">
+                <h3>🔐 CONFIGURAR TOKEN</h3>
+                <p>Insira seu token do Discord para usar as funcionalidades</p>
+                <div class="token-form">
+                    <div class="form-group">
+                        <label for="discordToken">Token do Discord:</label>
+                        <input type="password" id="discordToken" class="form-input" 
+                               placeholder="Insira seu token aqui...">
+                    </div>
+                    <button id="saveTokenBtn" class="cyber-button">
+                        <span>SALVAR TOKEN</span>
+                        <div class="cyber-button__glow"></div>
+                    </button>
+                </div>
+                <div id="tokenStatus" class="status-message" style="display: none;"></div>
+            </div>
+
+            <div class="cyber-card">
+                <h3>🧹 LIMPAR DM</h3>
+                <p>Limpe mensagens de um canal específico</p>
+                <div class="dm-form">
+                    <div class="form-group">
+                        <label for="channelId">Channel ID:</label>
+                        <input type="text" id="channelId" class="form-input" 
+                               placeholder="Insira o ID do canal...">
+                    </div>
+                    <button id="clearDmBtn" class="cyber-button">
+                        <span>INICIAR LIMPEZA</span>
+                        <div class="cyber-button__glow"></div>
+                    </button>
+                </div>
+                <div id="dmStatus" class="status-message" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="cyber-card">
+            <h3>📋 INFORMAÇÕES IMPORTANTES</h3>
+            <ul style="list-style: none; line-height: 1.6;">
+                <li>✅ Sistema com rate limit automático (0.4-2s por mensagem)</li>
+                <li>✅ Sessões individuais para múltiplos usuários</li>
+                <li>✅ Interface facil de usar e responsiva</li>
+                <li>✅ Autenticação segura com OAuth2 Discord</li>
+                <li>⚠️ Mantenha seu token seguro e não o compartilhe</li>
+                <li>⚠️ O sistema só deleta mensagens enviadas por você</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="cyber-grid"></div>
+    <div class="particles-container"></div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
