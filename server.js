@@ -33,6 +33,14 @@ app.use(session({
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Middleware para verificar autenticação em APIs
+const requireAuthAPI = (req, res, next) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Não autenticado' });
+    }
+    next();
+};
+
 // ========== ROTAS SIMPLIFICADAS ========== //
 
 // Rota principal
@@ -119,17 +127,15 @@ app.get('/dashboard', (req, res) => {
     });
 });
 
-// Salvar Token
-app.post('/save-token', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Não autenticado' });
-    }
-
+// Salvar Token - API CORRIGIDA
+app.post('/save-token', requireAuthAPI, (req, res) => {
     const { token } = req.body;
+    
     if (!token) {
         return res.status(400).json({ error: 'Token é obrigatório' });
     }
 
+    console.log('💾 Salvando token para:', req.session.user.username);
     tokens.set(req.session.user.id, token);
     
     res.json({ 
@@ -138,12 +144,8 @@ app.post('/save-token', (req, res) => {
     });
 });
 
-// Limpar DM
-app.post('/clear-dm', async (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Não autenticado' });
-    }
-
+// Limpar DM - API CORRIGIDA
+app.post('/clear-dm', requireAuthAPI, async (req, res) => {
     const { channelId } = req.body;
     const userToken = tokens.get(req.session.user.id);
 
@@ -156,6 +158,8 @@ app.post('/clear-dm', async (req, res) => {
     }
 
     try {
+        console.log('🧹 Iniciando limpeza para:', req.session.user.username);
+        
         const response = await axios.get(`https://discord.com/api/v9/channels/${channelId}/messages`, {
             headers: {
                 'Authorization': userToken
