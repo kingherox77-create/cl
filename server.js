@@ -10,37 +10,36 @@ const PORT = process.env.PORT || 3000;
 // Storage em memória
 const tokens = new Map();
 
-// Middlewares CRÍTICOS - ORDEM IMPORTA
+// Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session config - CONFIGURAÇÃO QUE FUNCIONA
+// Session config
 app.use(session({
     secret: process.env.SESSION_SECRET || 'chave-muito-secreta-para-sessao-123456789',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // IMPORTANTE: false para desenvolvimento
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dias
+        secure: false,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
         sameSite: 'lax'
     }
 }));
 
-// Servir arquivos estáticos DEPOIS da sessão
 app.use(express.static(path.join(__dirname, 'public')));
 
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Middleware de log para debug
+// Middleware de log
 app.use((req, res, next) => {
-    console.log('🔍', req.method, req.path, '| Session:', req.sessionID, '| User:', req.session.user?.username || 'N/A');
+    console.log('🔍', req.method, req.path, '| User:', req.session.user?.username || 'N/A');
     next();
 });
 
-// Middleware para verificar autenticação em APIs
+// Middleware para APIs
 const requireAuthAPI = (req, res, next) => {
     if (!req.session.user) {
         return res.status(401).json({ error: 'Não autenticado' });
@@ -48,26 +47,28 @@ const requireAuthAPI = (req, res, next) => {
     next();
 };
 
-// ========== ROTAS ========== //
+// ========== ROTAS CORRIGIDAS ========== //
 
 // Rota principal
 app.get('/', (req, res) => {
-    console.log('🏠 Página principal - User:', req.session.user?.username || 'Não logado');
-    
     if (req.session.user) {
         return res.redirect('/dashboard');
     }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Login Discord
+// Login Discord - URL ABSOLUTA
 app.get('/auth/discord', (req, res) => {
     console.log('🔐 Iniciando login Discord...');
-    const discordAuthURL = `https://discord.com/api/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.CALLBACK_URL)}&response_type=code&scope=identify`;
+    
+    // URL ABSOLUTA - CORRIGIDA
+    const discordAuthURL = `https://discord.com/api/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&redirect_uri=https%3A%2F%2Fcl-efk0.onrender.com%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify`;
+    
+    console.log('🔗 URL Discord:', discordAuthURL);
     res.redirect(discordAuthURL);
 });
 
-// Callback do Discord - VERSÃO SUPER SIMPLIFICADA
+// Callback do Discord - URL ABSOLUTA
 app.get('/auth/discord/callback', async (req, res) => {
     try {
         const { code } = req.query;
@@ -75,18 +76,17 @@ app.get('/auth/discord/callback', async (req, res) => {
         console.log('🔄 Callback recebido, code:', code ? '✅' : '❌');
         
         if (!code) {
-            console.log('❌ Code não recebido');
             return res.redirect('/?error=no_code');
         }
 
-        // Trocar code por access token
+        // Trocar code por access token - URL ABSOLUTA
         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token',
             new URLSearchParams({
                 client_id: process.env.DISCORD_CLIENT_ID,
                 client_secret: process.env.DISCORD_CLIENT_SECRET,
                 grant_type: 'authorization_code',
                 code: code,
-                redirect_uri: process.env.CALLBACK_URL,
+                redirect_uri: 'https://cl-efk0.onrender.com/auth/discord/callback', // URL ABSOLUTA
                 scope: 'identify'
             }),
             {
@@ -109,7 +109,6 @@ app.get('/auth/discord/callback', async (req, res) => {
         const userData = userResponse.data;
         console.log('✅ Dados do usuário:', userData.username);
         
-        // SALVAR USUÁRIO NA SESSÃO - FORÇAR SALVAMENTO
         req.session.user = {
             id: userData.id,
             username: userData.username,
@@ -117,17 +116,13 @@ app.get('/auth/discord/callback', async (req, res) => {
             avatar: userData.avatar
         };
 
-        // FORÇAR SALVAMENTO DA SESSÃO
         req.session.save((err) => {
             if (err) {
                 console.error('❌ Erro ao salvar sessão:', err);
                 return res.redirect('/?error=session_error');
             }
             
-            console.log('💾 Sessão salva com sucesso para:', userData.username);
-            console.log('🔄 Redirecionando para /dashboard...');
-            
-            // Redirecionar para dashboard
+            console.log('💾 Sessão salva para:', userData.username);
             res.redirect('/dashboard');
         });
 
@@ -137,20 +132,14 @@ app.get('/auth/discord/callback', async (req, res) => {
     }
 });
 
-// Dashboard - VERIFICAÇÃO FORTE
+// Dashboard
 app.get('/dashboard', (req, res) => {
-    console.log('📊 Acessando dashboard...');
-    console.log('   Session user:', req.session.user);
-    console.log('   Session ID:', req.sessionID);
-    
     if (!req.session.user) {
-        console.log('❌ SEM USUÁRIO NA SESSÃO - Redirecionando para /');
         return res.redirect('/');
     }
 
     const userToken = tokens.get(req.session.user.id);
 
-    console.log('✅ Renderizando dashboard para:', req.session.user.username);
     res.render('dashboard', {
         user: req.session.user,
         token: userToken || null
@@ -165,7 +154,6 @@ app.post('/save-token', requireAuthAPI, (req, res) => {
         return res.status(400).json({ error: 'Token é obrigatório' });
     }
 
-    console.log('💾 Salvando token para:', req.session.user.username);
     tokens.set(req.session.user.id, token);
     
     res.json({ 
@@ -188,8 +176,6 @@ app.post('/clear-dm', requireAuthAPI, async (req, res) => {
     }
 
     try {
-        console.log('🧹 Iniciando limpeza para:', req.session.user.username);
-        
         const response = await axios.get(`https://discord.com/api/v9/channels/${channelId}/messages`, {
             headers: {
                 'Authorization': userToken
@@ -233,16 +219,11 @@ app.post('/clear-dm', requireAuthAPI, async (req, res) => {
 
 // Logout
 app.get('/logout', (req, res) => {
-    console.log('🚪 Logout:', req.session.user?.username);
-    
     if (req.session.user) {
         tokens.delete(req.session.user.id);
     }
     
     req.session.destroy((err) => {
-        if (err) {
-            console.error('❌ Erro ao destruir sessão:', err);
-        }
         res.redirect('/');
     });
 });
@@ -251,39 +232,19 @@ app.get('/logout', (req, res) => {
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK',
-        user: req.session.user ? req.session.user.username : 'Não logado',
-        sessionId: req.sessionID
+        user: req.session.user ? req.session.user.username : 'Não logado'
     });
 });
 
-// Debug session - CRÍTICO PARA TESTE
+// Debug session
 app.get('/debug-session', (req, res) => {
     res.json({
         user: req.session.user,
         sessionID: req.sessionID,
-        hasToken: req.session.user ? tokens.has(req.session.user.id) : false,
-        cookies: req.headers.cookie
-    });
-});
-
-// Rota de teste de sessão
-app.get('/test-session', (req, res) => {
-    req.session.test = 'test-value';
-    req.session.save((err) => {
-        if (err) {
-            return res.json({ error: 'Erro ao salvar sessão', details: err.message });
-        }
-        res.json({ 
-            message: 'Sessão testada', 
-            sessionId: req.sessionID,
-            testValue: req.session.test 
-        });
+        hasToken: req.session.user ? tokens.has(req.session.user.id) : false
     });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
-    console.log(`🏠 Health: http://localhost:${PORT}/health`);
-    console.log(`🔍 Debug: http://localhost:${PORT}/debug-session`);
-    console.log(`🔐 Login: http://localhost:${PORT}/auth/discord`);
 });
