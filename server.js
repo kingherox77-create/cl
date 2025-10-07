@@ -47,7 +47,7 @@ const requireAuthAPI = (req, res, next) => {
     next();
 };
 
-// ========== ROTAS CORRIGIDAS ========== //
+// ========== ROTAS ========== //
 
 // Rota principal
 app.get('/', (req, res) => {
@@ -57,18 +57,16 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Login Discord - URL ABSOLUTA
+// Login Discord
 app.get('/auth/discord', (req, res) => {
     console.log('🔐 Iniciando login Discord...');
     
-    // URL ABSOLUTA - CORRIGIDA
     const discordAuthURL = `https://discord.com/api/oauth2/authorize?client_id=${process.env.DISCORD_CLIENT_ID}&redirect_uri=https%3A%2F%2Fcl-efk0.onrender.com%2Fauth%2Fdiscord%2Fcallback&response_type=code&scope=identify`;
     
-    console.log('🔗 URL Discord:', discordAuthURL);
     res.redirect(discordAuthURL);
 });
 
-// Callback do Discord - URL ABSOLUTA
+// Callback do Discord
 app.get('/auth/discord/callback', async (req, res) => {
     try {
         const { code } = req.query;
@@ -79,14 +77,13 @@ app.get('/auth/discord/callback', async (req, res) => {
             return res.redirect('/?error=no_code');
         }
 
-        // Trocar code por access token - URL ABSOLUTA
         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token',
             new URLSearchParams({
                 client_id: process.env.DISCORD_CLIENT_ID,
                 client_secret: process.env.DISCORD_CLIENT_SECRET,
                 grant_type: 'authorization_code',
                 code: code,
-                redirect_uri: 'https://cl-efk0.onrender.com/auth/discord/callback', // URL ABSOLUTA
+                redirect_uri: 'https://cl-efk0.onrender.com/auth/discord/callback',
                 scope: 'identify'
             }),
             {
@@ -97,9 +94,7 @@ app.get('/auth/discord/callback', async (req, res) => {
         );
 
         const accessToken = tokenResponse.data.access_token;
-        console.log('✅ Access token obtido');
 
-        // Buscar dados do usuário
         const userResponse = await axios.get('https://discord.com/api/users/@me', {
             headers: {
                 Authorization: `Bearer ${accessToken}`
@@ -107,7 +102,6 @@ app.get('/auth/discord/callback', async (req, res) => {
         });
 
         const userData = userResponse.data;
-        console.log('✅ Dados do usuário:', userData.username);
         
         req.session.user = {
             id: userData.id,
@@ -118,11 +112,8 @@ app.get('/auth/discord/callback', async (req, res) => {
 
         req.session.save((err) => {
             if (err) {
-                console.error('❌ Erro ao salvar sessão:', err);
                 return res.redirect('/?error=session_error');
             }
-            
-            console.log('💾 Sessão salva para:', userData.username);
             res.redirect('/dashboard');
         });
 
@@ -213,6 +204,164 @@ app.post('/clear-dm', requireAuthAPI, async (req, res) => {
         console.error('Erro ao limpar DM:', error.message);
         res.status(500).json({ 
             error: 'Erro ao limpar DM. Verifique o token e o channel ID.' 
+        });
+    }
+});
+
+// Limpar Mensagens em Servidor
+app.post('/clear-server-messages', requireAuthAPI, async (req, res) => {
+    const { serverId, channelId } = req.body;
+    const userToken = tokens.get(req.session.user.id);
+
+    if (!serverId || !channelId) {
+        return res.status(400).json({ error: 'Server ID e Channel ID são obrigatórios' });
+    }
+
+    if (!userToken) {
+        return res.status(400).json({ error: 'Token não configurado' });
+    }
+
+    try {
+        const response = await axios.get(`https://discord.com/api/v9/channels/${channelId}/messages`, {
+            headers: {
+                'Authorization': userToken
+            }
+        });
+
+        const messages = response.data;
+        let deletedCount = 0;
+
+        for (const message of messages) {
+            if (message.author.id === req.session.user.id) {
+                try {
+                    await axios.delete(`https://discord.com/api/v9/channels/${channelId}/messages/${message.id}`, {
+                        headers: {
+                            'Authorization': userToken
+                        }
+                    });
+                    deletedCount++;
+                    
+                    await new Promise(resolve => 
+                        setTimeout(resolve, Math.random() * 1600 + 400)
+                    );
+                } catch (error) {
+                    console.error('Erro ao deletar mensagem:', error.message);
+                }
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Limpeza concluída! ${deletedCount} mensagens deletadas do servidor.` 
+        });
+
+    } catch (error) {
+        console.error('Erro ao limpar mensagens do servidor:', error.message);
+        res.status(500).json({ 
+            error: 'Erro ao limpar mensagens. Verifique os IDs e permissões.' 
+        });
+    }
+});
+
+// Sair de Todos os Servidores
+app.post('/leave-all-servers', requireAuthAPI, async (req, res) => {
+    const userToken = tokens.get(req.session.user.id);
+
+    if (!userToken) {
+        return res.status(400).json({ error: 'Token não configurado' });
+    }
+
+    try {
+        // Buscar servidores do usuário
+        const response = await axios.get('https://discord.com/api/v9/users/@me/guilds', {
+            headers: {
+                'Authorization': userToken
+            }
+        });
+
+        const servers = response.data;
+        let leftCount = 0;
+
+        for (const server of servers) {
+            try {
+                await axios.delete(`https://discord.com/api/v9/users/@me/guilds/${server.id}`, {
+                    headers: {
+                        'Authorization': userToken
+                    }
+                });
+                leftCount++;
+                
+                // Rate limit
+                await new Promise(resolve => 
+                    setTimeout(resolve, Math.random() * 1600 + 400)
+                );
+            } catch (error) {
+                console.error(`Erro ao sair do servidor ${server.name}:`, error.message);
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Saída concluída! Você saiu de ${leftCount} servidores.` 
+        });
+
+    } catch (error) {
+        console.error('Erro ao sair dos servidores:', error.message);
+        res.status(500).json({ 
+            error: 'Erro ao sair dos servidores. Verifique o token.' 
+        });
+    }
+});
+
+// Sair de Todas as DMs em Grupo
+app.post('/leave-group-dms', requireAuthAPI, async (req, res) => {
+    const userToken = tokens.get(req.session.user.id);
+
+    if (!userToken) {
+        return res.status(400).json({ error: 'Token não configurado' });
+    }
+
+    try {
+        // Buscar DMs do usuário
+        const response = await axios.get('https://discord.com/api/v9/users/@me/channels', {
+            headers: {
+                'Authorization': userToken
+            }
+        });
+
+        const channels = response.data;
+        let leftCount = 0;
+
+        for (const channel of channels) {
+            // Verificar se é DM em grupo (tem type 3 e mais de 2 membros)
+            if (channel.type === 3 && channel.recipients && channel.recipients.length <= 10) {
+                try {
+                    await axios.delete(`https://discord.com/api/v9/channels/${channel.id}`, {
+                        headers: {
+                            'Authorization': userToken
+                        }
+                    });
+                    leftCount++;
+                    
+                    // Rate limit
+                    await new Promise(resolve => 
+                        setTimeout(resolve, Math.random() * 1600 + 400)
+                    );
+                } catch (error) {
+                    console.error(`Erro ao sair do grupo ${channel.id}:`, error.message);
+                }
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Saída concluída! Você saiu de ${leftCount} grupos DM.` 
+        });
+
+    } catch (error) {
+        console.error('Erro ao sair dos grupos DM:', error.message);
+        res.status(500).json({ 
+            error: 'Erro ao sair dos grupos DM. Verifique o token.' 
         });
     }
 });
