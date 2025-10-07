@@ -143,10 +143,9 @@
             }
         });
 
-        // Salvar token permanentemente
+        // Salvar token permanentemente - CORRIGIDO
         function saveToken() {
             const token = document.getElementById('discordToken').value.trim();
-            const statusDiv = document.getElementById('tokenStatus');
             
             if (!token) {
                 showStatus('❌ Por favor, insira um token válido.', 'error');
@@ -168,7 +167,13 @@
                 },
                 body: JSON.stringify({ token: token })
             })
-            .then(response => response.json())
+            .then(response => {
+                // Verificar se a resposta é JSON
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showStatus('✅ ' + data.message, 'success');
@@ -181,14 +186,21 @@
                 }
             })
             .catch(error => {
-                showStatus('❌ Erro de conexão: ' + error.message, 'error');
+                console.error('Erro completo:', error);
+                if (error.message.includes('401') || error.message.includes('Não autenticado')) {
+                    showStatus('❌ Sessão expirada. Faça login novamente.', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
+                } else {
+                    showStatus('❌ Erro de conexão: ' + error.message, 'error');
+                }
             });
         }
 
-        // Limpar DM usando token salvo
+        // Limpar DM usando token salvo - CORRIGIDO
         function clearDM() {
             const channelId = document.getElementById('channelId').value.trim();
-            const statusDiv = document.getElementById('dmStatus');
             
             if (!channelId) {
                 showStatus('❌ Por favor, insira um Channel ID válido.', 'error', 'dmStatus');
@@ -210,7 +222,13 @@
                 },
                 body: JSON.stringify({ channelId: channelId })
             })
-            .then(response => response.json())
+            .then(response => {
+                // Verificar se a resposta é JSON
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor: ' + response.status);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showStatus('✅ ' + data.message, 'success', 'dmStatus');
@@ -219,11 +237,18 @@
                 }
             })
             .catch(error => {
-                showStatus('❌ Erro de conexão: ' + error.message, 'error', 'dmStatus');
+                console.error('Erro completo:', error);
+                if (error.message.includes('401') || error.message.includes('Não autenticado')) {
+                    showStatus('❌ Sessão expirada. Faça login novamente.', 'error', 'dmStatus');
+                } else if (error.message.includes('Token não configurado')) {
+                    showStatus('❌ Configure o token primeiro na aba de token.', 'error', 'dmStatus');
+                } else {
+                    showStatus('❌ Erro de conexão: ' + error.message, 'error', 'dmStatus');
+                }
             });
         }
 
-        // Guia para pegar token no mobile
+        // Guia para pegar token
         function showTokenGuide() {
             const guide = `
 📱 COMO PEGAR TOKEN NO DISCORD:
@@ -261,7 +286,7 @@ copy(webpackChunkdiscord_app.push([[Math.random()], {}, (e) => { m=[]; for(let x
             }
         }
 
-        // Verificar se tem token salvo e mostrar instruções
+        // Verificar se tem token salvo
         window.onload = function() {
             const hasToken = '<%= token %>' && '<%= token %>' !== 'null' && '<%= token %>' !== '';
             
