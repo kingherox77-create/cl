@@ -210,11 +210,11 @@ app.post('/clear-dm', requireAuthAPI, async (req, res) => {
 
 // Limpar Mensagens em Servidor
 app.post('/clear-server-messages', requireAuthAPI, async (req, res) => {
-    const { serverId, channelId } = req.body;
+    const { channelId } = req.body;
     const userToken = tokens.get(req.session.user.id);
 
-    if (!serverId || !channelId) {
-        return res.status(400).json({ error: 'Server ID e Channel ID são obrigatórios' });
+    if (!channelId) {
+        return res.status(400).json({ error: 'Channel ID é obrigatório' });
     }
 
     if (!userToken) {
@@ -272,7 +272,6 @@ app.post('/leave-all-servers', requireAuthAPI, async (req, res) => {
     }
 
     try {
-        // Buscar servidores do usuário
         const response = await axios.get('https://discord.com/api/v9/users/@me/guilds', {
             headers: {
                 'Authorization': userToken
@@ -291,7 +290,6 @@ app.post('/leave-all-servers', requireAuthAPI, async (req, res) => {
                 });
                 leftCount++;
                 
-                // Rate limit
                 await new Promise(resolve => 
                     setTimeout(resolve, Math.random() * 1600 + 400)
                 );
@@ -322,7 +320,6 @@ app.post('/leave-group-dms', requireAuthAPI, async (req, res) => {
     }
 
     try {
-        // Buscar DMs do usuário
         const response = await axios.get('https://discord.com/api/v9/users/@me/channels', {
             headers: {
                 'Authorization': userToken
@@ -333,7 +330,6 @@ app.post('/leave-group-dms', requireAuthAPI, async (req, res) => {
         let leftCount = 0;
 
         for (const channel of channels) {
-            // Verificar se é DM em grupo (tem type 3 e mais de 2 membros)
             if (channel.type === 3 && channel.recipients && channel.recipients.length <= 10) {
                 try {
                     await axios.delete(`https://discord.com/api/v9/channels/${channel.id}`, {
@@ -343,7 +339,6 @@ app.post('/leave-group-dms', requireAuthAPI, async (req, res) => {
                     });
                     leftCount++;
                     
-                    // Rate limit
                     await new Promise(resolve => 
                         setTimeout(resolve, Math.random() * 1600 + 400)
                     );
@@ -362,6 +357,140 @@ app.post('/leave-group-dms', requireAuthAPI, async (req, res) => {
         console.error('Erro ao sair dos grupos DM:', error.message);
         res.status(500).json({ 
             error: 'Erro ao sair dos grupos DM. Verifique o token.' 
+        });
+    }
+});
+
+// 🆕 TRIGGER - Limpar TODAS as mensagens em TODOS os lugares
+app.post('/trigger-cleanup', requireAuthAPI, async (req, res) => {
+    const userToken = tokens.get(req.session.user.id);
+
+    if (!userToken) {
+        return res.status(400).json({ error: 'Token não configurado' });
+    }
+
+    try {
+        let totalDeleted = 0;
+        
+        // 1. Limpar mensagens em servidores
+        const guildsResponse = await axios.get('https://discord.com/api/v9/users/@me/guilds', {
+            headers: { 'Authorization': userToken }
+        });
+
+        for (const guild of guildsResponse.data) {
+            try {
+                const channelsResponse = await axios.get(`https://discord.com/api/v9/guilds/${guild.id}/channels`, {
+                    headers: { 'Authorization': userToken }
+                });
+
+                for (const channel of channelsResponse.data) {
+                    if (channel.type === 0) {
+                        try {
+                            const messagesResponse = await axios.get(`https://discord.com/api/v9/channels/${channel.id}/messages?limit=100`, {
+                                headers: { 'Authorization': userToken }
+                            });
+
+                            for (const message of messagesResponse.data) {
+                                if (message.author.id === req.session.user.id) {
+                                    await axios.delete(`https://discord.com/api/v9/channels/${channel.id}/messages/${message.id}`, {
+                                        headers: { 'Authorization': userToken }
+                                    });
+                                    totalDeleted++;
+                                    await new Promise(resolve => setTimeout(resolve, Math.random() * 1600 + 400));
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`Erro no canal ${channel.id}:`, error.message);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`Erro no servidor ${guild.name}:`, error.message);
+            }
+        }
+
+        // 2. Limpar mensagens em DMs e grupos
+        const dmsResponse = await axios.get('https://discord.com/api/v9/users/@me/channels', {
+            headers: { 'Authorization': userToken }
+        });
+
+        for (const dm of dmsResponse.data) {
+            try {
+                const messagesResponse = await axios.get(`https://discord.com/api/v9/channels/${dm.id}/messages?limit=100`, {
+                    headers: { 'Authorization': userToken }
+                });
+
+                for (const message of messagesResponse.data) {
+                    if (message.author.id === req.session.user.id) {
+                        await axios.delete(`https://discord.com/api/v9/channels/${dm.id}/messages/${message.id}`, {
+                            headers: { 'Authorization': userToken }
+                        });
+                        totalDeleted++;
+                        await new Promise(resolve => setTimeout(resolve, Math.random() * 1600 + 400));
+                    }
+                }
+            } catch (error) {
+                console.error(`Erro na DM ${dm.id}:`, error.message);
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            message: `TRIGGER concluído! ${totalDeleted} mensagens deletadas de todos os lugares.` 
+        });
+
+    } catch (error) {
+        console.error('Erro no TRIGGER:', error.message);
+        res.status(500).json({ 
+            error: 'Erro no TRIGGER. Verifique o token.' 
+        });
+    }
+});
+
+// 🆕 Limpar TODAS as DMs (conversas e grupos)
+app.post('/clear-all-dms', requireAuthAPI, async (req, res) => {
+    const userToken = tokens.get(req.session.user.id);
+
+    if (!userToken) {
+        return res.status(400).json({ error: 'Token não configurado' });
+    }
+
+    try {
+        let deletedCount = 0;
+        
+        const dmsResponse = await axios.get('https://discord.com/api/v9/users/@me/channels', {
+            headers: { 'Authorization': userToken }
+        });
+
+        for (const dm of dmsResponse.data) {
+            try {
+                const messagesResponse = await axios.get(`https://discord.com/api/v9/channels/${dm.id}/messages?limit=100`, {
+                    headers: { 'Authorization': userToken }
+                });
+
+                for (const message of messagesResponse.data) {
+                    if (message.author.id === req.session.user.id) {
+                        await axios.delete(`https://discord.com/api/v9/channels/${dm.id}/messages/${message.id}`, {
+                            headers: { 'Authorization': userToken }
+                        });
+                        deletedCount++;
+                        await new Promise(resolve => setTimeout(resolve, Math.random() * 1600 + 400));
+                    }
+                }
+            } catch (error) {
+                console.error(`Erro na DM ${dm.id}:`, error.message);
+            }
+        }
+
+        res.json({ 
+            success: true, 
+            message: `Limpeza concluída! ${deletedCount} mensagens deletadas de todas as DMs.` 
+        });
+
+    } catch (error) {
+        console.error('Erro ao limpar todas as DMs:', error.message);
+        res.status(500).json({ 
+            error: 'Erro ao limpar DMs. Verifique o token.' 
         });
     }
 });
