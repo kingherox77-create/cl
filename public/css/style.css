@@ -7,7 +7,7 @@
 body {
     font-family: 'Exo 2', sans-serif;
     background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
-    color: #66ccff;
+    color: #87ceeb;
     min-height: 100vh;
     overflow-x: hidden;
     position: relative;
@@ -35,6 +35,55 @@ body {
     display: inline-block;
 }
 
+.glitch {
+    position: relative;
+    color: #87ceeb;
+    text-shadow: 
+        0 0 10px #87ceeb,
+        0 0 20px #87ceeb,
+        0 0 40px #4682b4;
+}
+
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.glitch::before {
+    animation: glitch-1 2s infinite linear alternate-reverse;
+    color: #add8e6;
+    z-index: -1;
+}
+
+.glitch::after {
+    animation: glitch-2 3s infinite linear alternate-reverse;
+    color: #b0e0e6;
+    z-index: -2;
+}
+
+@keyframes glitch-1 {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+}
+
+@keyframes glitch-2 {
+    0% { transform: translate(0); }
+    20% { transform: translate(2px, -2px); }
+    40% { transform: translate(2px, 2px); }
+    60% { transform: translate(-2px, -2px); }
+    80% { transform: translate(-2px, 2px); }
+    100% { transform: translate(0); }
+}
+
 .subtitle {
     font-size: 1.2rem;
     color: #b0c4de;
@@ -43,14 +92,14 @@ body {
 
 .cyber-card {
     background: rgba(10, 15, 35, 0.9);
-    border: 1px solid #66ccff;
+    border: 1px solid #87ceeb;
     border-radius: 10px;
     padding: 2rem;
     margin: 2rem 0;
     backdrop-filter: blur(10px);
     box-shadow: 
-        0 0 20px rgba(102, 204, 255, 0.3),
-        inset 0 0 20px rgba(102, 204, 255, 0.1);
+        0 0 20px rgba(135, 206, 235, 0.3),
+        inset 0 0 20px rgba(135, 206, 235, 0.1);
     position: relative;
     overflow: hidden;
 }
@@ -58,7 +107,7 @@ body {
 .cyber-button {
     display: inline-block;
     padding: 1rem 2rem;
-    background: linear-gradient(45deg, #66ccff, #3399ff);
+    background: linear-gradient(45deg, #87ceeb, #4682b4);
     color: #0c0c0c;
     text-decoration: none;
     border: none;
@@ -74,8 +123,8 @@ body {
 
 .cyber-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(102, 204, 255, 0.5);
-    background: linear-gradient(45deg, #3399ff, #66ccff);
+    box-shadow: 0 0 20px rgba(135, 206, 235, 0.5);
+    background: linear-gradient(45deg, #4682b4, #87ceeb);
 }
 
 .cyber-button__glow {
@@ -120,7 +169,7 @@ body {
 
 .slide-content {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(102, 204, 255, 0.3);
+    border: 1px solid rgba(135, 206, 235, 0.3);
     border-radius: 10px;
     padding: 2rem;
     text-align: center;
@@ -129,7 +178,7 @@ body {
     flex-direction: column;
     justify-content: center;
     backdrop-filter: blur(10px);
-    color: #66ccff;
+    color: #87ceeb;
 }
 
 .slider-nav {
@@ -143,15 +192,15 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    border: 2px solid #66ccff;
+    border: 2px solid #87ceeb;
     background: transparent;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
 .nav-btn.active {
-    background: #66ccff;
-    box-shadow: 0 0 10px #66ccff;
+    background: #87ceeb;
+    box-shadow: 0 0 10px #87ceeb;
 }
 
 .cyber-grid {
@@ -161,8 +210,8 @@ body {
     width: 100%;
     height: 100%;
     background: 
-        linear-gradient(90deg, rgba(102, 204, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(102, 204, 255, 0.05) 1px, transparent 1px);
+        linear-gradient(90deg, rgba(135, 206, 235, 0.05) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(135, 206, 235, 0.05) 1px, transparent 1px);
     background-size: 50px 50px;
     z-index: 1;
     pointer-events: none;
@@ -182,7 +231,7 @@ body {
     position: absolute;
     width: 2px;
     height: 2px;
-    background: #66ccff;
+    background: #87ceeb;
     border-radius: 50%;
     animation: float 6s infinite linear;
 }
@@ -220,7 +269,7 @@ body {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    border: 2px solid #66ccff;
+    border: 2px solid #87ceeb;
     margin-right: 1rem;
 }
 
@@ -239,16 +288,16 @@ body {
 .form-input {
     padding: 1rem;
     background: rgba(255, 255, 255, 0.1);
-    border: 1px solid #66ccff;
+    border: 1px solid #87ceeb;
     border-radius: 5px;
-    color: #66ccff;
+    color: #87ceeb;
     font-family: 'Exo 2', sans-serif;
     backdrop-filter: blur(10px);
 }
 
 .form-input:focus {
     outline: none;
-    box-shadow: 0 0 10px rgba(102, 204, 255, 0.5);
+    box-shadow: 0 0 10px rgba(135, 206, 235, 0.5);
 }
 
 .form-input::placeholder {
@@ -263,30 +312,30 @@ body {
 }
 
 .status-success {
-    background: rgba(102, 204, 255, 0.2);
-    border: 1px solid #66ccff;
-    color: #66ccff;
+    background: rgba(135, 206, 235, 0.2);
+    border: 1px solid #87ceeb;
+    color: #87ceeb;
 }
 
 .status-error {
-    background: rgba(102, 204, 255, 0.3);
-    border: 1px solid #66ccff;
-    color: #66ccff;
+    background: rgba(135, 206, 235, 0.3);
+    border: 1px solid #87ceeb;
+    color: #87ceeb;
 }
 
 .status-info {
     background: rgba(255, 255, 255, 0.1);
-    border: 1px solid #66ccff;
-    color: #66ccff;
+    border: 1px solid #87ceeb;
+    color: #87ceeb;
 }
 
 .logout-btn {
-    background: linear-gradient(45deg, #66ccff, #3399ff);
+    background: linear-gradient(45deg, #87ceeb, #4682b4);
     margin-top: 2rem;
 }
 
 .logout-btn:hover {
-    background: linear-gradient(45deg, #3399ff, #66ccff);
+    background: linear-gradient(45deg, #4682b4, #87ceeb);
 }
 
 /* Mobile Steps */
@@ -301,12 +350,12 @@ body {
     background: rgba(255, 255, 255, 0.05);
     padding: 1rem;
     border-radius: 8px;
-    border-left: 3px solid #66ccff;
-    color: #66ccff;
+    border-left: 3px solid #87ceeb;
+    color: #87ceeb;
 }
 
 .step h4 {
-    color: #66ccff;
+    color: #87ceeb;
     margin-bottom: 0.5rem;
 }
 
@@ -316,16 +365,16 @@ body {
     padding: 1rem;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 8px;
-    border: 1px solid #66ccff;
+    border: 1px solid #87ceeb;
 }
 
 .mobile-tips {
-    background: rgba(102, 204, 255, 0.1);
+    background: rgba(135, 206, 235, 0.1);
     padding: 1rem;
     border-radius: 8px;
     margin-top: 1rem;
-    border: 1px solid #66ccff;
-    color: #66ccff;
+    border: 1px solid #87ceeb;
+    color: #87ceeb;
 }
 
 .function-grid {
@@ -337,14 +386,14 @@ body {
 
 .function-card {
     background: rgba(10, 15, 35, 0.9);
-    border: 1px solid #66ccff;
+    border: 1px solid #87ceeb;
     border-radius: 10px;
     padding: 1.5rem;
     backdrop-filter: blur(10px);
 }
 
 .function-card h3 {
-    color: #66ccff;
+    color: #87ceeb;
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
