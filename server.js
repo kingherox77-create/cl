@@ -9,29 +9,28 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuração do Passport e Session
+// Middlewares
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Session config
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'seu_secret_aqui',
+    secret: process.env.SESSION_SECRET || 'fallback-secret',
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false }
 }));
 
+// Passport config
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configuração do EJS
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static('public'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configuração do Passport Discord
+// Configure Passport
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
-    callbackURL: process.env.CALLBACK_URL || 'http://localhost:3000/auth/discord/callback',
+    callbackURL: process.env.CALLBACK_URL,
     scope: ['identify']
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, profile);
@@ -45,7 +44,11 @@ passport.deserializeUser((obj, done) => {
     done(null, obj);
 });
 
-// Armazenamento em memória (em produção use Redis)
+// View engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Storage (em produção use Redis)
 const userSessions = new Map();
 
 // Rotas
@@ -58,7 +61,6 @@ app.get('/auth/discord', passport.authenticate('discord'));
 app.get('/auth/discord/callback',
     passport.authenticate('discord', { failureRedirect: '/' }),
     (req, res) => {
-        // Inicializar sessão do usuário
         userSessions.set(req.user.id, {
             discordUser: req.user,
             token: null,
@@ -116,7 +118,6 @@ app.post('/clear-dm', async (req, res) => {
     }
 
     try {
-        // Buscar mensagens do canal
         const response = await axios.get(`https://discord.com/api/v9/channels/${channelId}/messages`, {
             headers: {
                 'Authorization': userSession.token
@@ -126,36 +127,28 @@ app.post('/clear-dm', async (req, res) => {
         const messages = response.data;
         let deletedCount = 0;
 
-        // Função para deletar mensagens com delay
-        const deleteMessages = async () => {
-            for (const message of messages) {
-                if (message.author.id === req.user.id) {
-                    try {
-                        await axios.delete(`https://discord.com/api/v9/channels/${channelId}/messages/${message.id}`, {
-                            headers: {
-                                'Authorization': userSession.token
-                            }
-                        });
-                        deletedCount++;
-                        
-                        // Delay entre 0.4 e 2 segundos
-                        await new Promise(resolve => 
-                            setTimeout(resolve, Math.random() * 1600 + 400)
-                        );
-                    } catch (error) {
-                        console.error('Erro ao deletar mensagem:', error.message);
-                    }
+        for (const message of messages) {
+            if (message.author.id === req.user.id) {
+                try {
+                    await axios.delete(`https://discord.com/api/v9/channels/${channelId}/messages/${message.id}`, {
+                        headers: {
+                            'Authorization': userSession.token
+                        }
+                    });
+                    deletedCount++;
+                    
+                    await new Promise(resolve => 
+                        setTimeout(resolve, Math.random() * 1600 + 400)
+                    );
+                } catch (error) {
+                    console.error('Erro ao deletar mensagem:', error.message);
                 }
             }
-            
-            return deletedCount;
-        };
-
-        const totalDeleted = await deleteMessages();
+        }
         
         res.json({ 
             success: true, 
-            message: `Limpeza concluída! ${totalDeleted} mensagens deletadas.` 
+            message: `Limpeza concluída! ${deletedCount} mensagens deletadas.` 
         });
 
     } catch (error) {
@@ -175,6 +168,12 @@ app.get('/logout', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
+// Rota de health check
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', message: 'Servidor funcionando' });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Servidor rodando na porta ${PORT}`);
+    console.log(`📧 URL: ${process.env.CALLBACK_URL}`);
 });
