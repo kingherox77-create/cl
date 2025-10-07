@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>0xCL</title>
+    <title>Dashboard - CL Message</title>
     <link rel="stylesheet" href="/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1 class="title glitch" data-text="0xCL"></h1>
-            <p class="subtitle">Sistema da 0xCL!</p>
+            <h1 class="title glitch" data-text="DASHBOARD">DASHBOARD</h1>
+            <p class="subtitle">Sistema Avançado de Gerenciamento Discord</p>
         </div>
 
         <div class="cyber-card user-info">
@@ -21,7 +21,7 @@
                 <div>
                     <h2>Bem-vindo, <%= user.username %>#<%= user.discriminator %></h2>
                     <p>ID: <%= user.id %></p>
-                    <p style="color: #87ceeb; font-size: 0.9rem; margin-top: 0.5rem;">
+                    <p style="color: #66ccff; font-size: 0.9rem; margin-top: 0.5rem;">
                         ✅ Sessão salva por 30 dias - Token salvo automaticamente
                     </p>
                 </div>
@@ -46,7 +46,7 @@
                     <span>SALVAR TOKEN</span>
                     <div class="cyber-button__glow"></div>
                 </button>
-                <button onclick="showTokenGuide()" class="cyber-button" style="background: linear-gradient(45deg, #87ceeb, #4682b4);">
+                <button onclick="showTokenGuide()" class="cyber-button" style="background: linear-gradient(45deg, #66ccff, #3399ff);">
                     <span>COMO PEGAR TOKEN</span>
                     <div class="cyber-button__glow"></div>
                 </button>
@@ -54,7 +54,7 @@
             <div id="tokenStatus" class="status-message" style="display: none;"></div>
             
             <!-- Status do Token -->
-            <div class="token-status" style="margin-top: 1rem; padding: 0.5rem; border-radius: 5px; background: rgba(135, 206, 235, 0.1); border: 1px solid #87ceeb;">
+            <div class="token-status" style="margin-top: 1rem; padding: 0.5rem; border-radius: 5px; background: rgba(102, 204, 255, 0.1); border: 1px solid #66ccff;">
                 <p style="margin: 0; font-size: 0.9rem;">
                     <% if (token) { %>
                         ✅ <strong>Token configurado:</strong> Todas as funções estão disponíveis
@@ -70,7 +70,7 @@
             <!-- Limpar DM -->
             <div class="cyber-card">
                 <h3>🧹 LIMPAR DM</h3>
-                <p>Apague suas mensagens em conversas privadas</p>
+                <p>Apague suas mensagens em uma conversa privada específica</p>
                 <div class="dm-form">
                     <div class="form-group">
                         <label for="channelId">Channel ID da DM:</label>
@@ -83,17 +83,12 @@
                     </button>
                 </div>
                 <div id="dmStatus" class="status-message" style="display: none;"></div>
-                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(135, 206, 235, 0.1); border-radius: 5px; border-left: 3px solid #87ceeb;">
-                    <p style="margin: 0; font-size: 0.85rem; color: #87ceeb;">
-                        <strong>💡 Dica:</strong> Clique com botão direito no canal → Copiar ID
-                    </p>
-                </div>
             </div>
 
             <!-- Limpar Mensagens em Servidor -->
             <div class="cyber-card">
                 <h3>🏢 LIMPAR SERVIDOR</h3>
-                <p>Apague suas mensagens em canais de servidor</p>
+                <p>Apague suas mensagens em um canal de servidor específico</p>
                 <div class="server-form">
                     <div class="form-group">
                         <label for="serverChannelId">Channel ID do Servidor:</label>
@@ -106,9 +101,50 @@
                     </button>
                 </div>
                 <div id="serverStatus" class="status-message" style="display: none;"></div>
-                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(135, 206, 235, 0.1); border-radius: 5px; border-left: 3px solid #87ceeb;">
-                    <p style="margin: 0; font-size: 0.85rem; color: #87ceeb;">
-                        <strong>💡 Dica:</strong> Funciona em qualquer canal de servidor
+            </div>
+
+            <!-- 🆕 TRIGGER - Limpar TUDO -->
+            <div class="cyber-card">
+                <h3>⚡ TRIGGER - LIMPAR TUDO</h3>
+                <p>Limpe TODAS suas mensagens em TODOS os servidores e DMs</p>
+                <div class="leave-form">
+                    <div class="form-group">
+                        <p style="color: #ff6b6b; font-size: 0.9rem; font-weight: bold;">
+                            ⚠️ IRREVERSÍVEL: Apagará TODAS suas mensagens em TODOS os lugares
+                        </p>
+                    </div>
+                    <button onclick="triggerCleanup()" class="cyber-button danger-button">
+                        <span>⚡ EXECUTAR TRIGGER</span>
+                        <div class="cyber-button__glow"></div>
+                    </button>
+                </div>
+                <div id="triggerStatus" class="status-message" style="display: none;"></div>
+                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255, 107, 107, 0.1); border-radius: 5px; border-left: 3px solid #ff6b6b;">
+                    <p style="margin: 0; font-size: 0.85rem; color: #ff6b6b;">
+                        <strong>⚠️ Mega Ação:</strong> Limpa servidores + DMs + Grupos
+                    </p>
+                </div>
+            </div>
+
+            <!-- 🆕 Limpar TODAS as DMs -->
+            <div class="cyber-card">
+                <h3>💬 LIMPAR TODAS AS DMs</h3>
+                <p>Apague suas mensagens em TODAS as conversas privadas e grupos</p>
+                <div class="leave-form">
+                    <div class="form-group">
+                        <p style="color: #ffa726; font-size: 0.9rem; font-weight: bold;">
+                            ⚠️ Apagará mensagens em TODAS as DMs e grupos
+                        </p>
+                    </div>
+                    <button onclick="clearAllDMs()" class="cyber-button warning-button">
+                        <span>🧹 LIMPAR TODAS AS DMs</span>
+                        <div class="cyber-button__glow"></div>
+                    </button>
+                </div>
+                <div id="clearAllDmsStatus" class="status-message" style="display: none;"></div>
+                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255, 167, 38, 0.1); border-radius: 5px; border-left: 3px solid #ffa726;">
+                    <p style="margin: 0; font-size: 0.85rem; color: #ffa726;">
+                        <strong>💡 Info:</strong> Todas as conversas privadas e grupos
                     </p>
                 </div>
             </div>
@@ -123,17 +159,12 @@
                             ⚠️ IRREVERSÍVEL: Você sairá de TODOS os servidores
                         </p>
                     </div>
-                    <button onclick="leaveAllServers()" class="cyber-button" style="background: linear-gradient(45deg, #ff6b6b, #ee5a52);">
+                    <button onclick="leaveAllServers()" class="cyber-button danger-button">
                         <span>SAIR DE TODOS OS SERVIDORES</span>
                         <div class="cyber-button__glow"></div>
                     </button>
                 </div>
                 <div id="leaveServersStatus" class="status-message" style="display: none;"></div>
-                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255, 107, 107, 0.1); border-radius: 5px; border-left: 3px solid #ff6b6b;">
-                    <p style="margin: 0; font-size: 0.85rem; color: #ff6b6b;">
-                        <strong>⚠️ Cuidado:</strong> Esta ação não pode ser desfeita
-                    </p>
-                </div>
             </div>
 
             <!-- Sair de Grupos DM -->
@@ -146,82 +177,33 @@
                             ⚠️ Sairá apenas de grupos, não de DMs individuais
                         </p>
                     </div>
-                    <button onclick="leaveGroupDMs()" class="cyber-button" style="background: linear-gradient(45deg, #ffa726, #ff9800);">
+                    <button onclick="leaveGroupDMs()" class="cyber-button warning-button">
                         <span>SAIR DE GRUPOS DM</span>
                         <div class="cyber-button__glow"></div>
                     </button>
                 </div>
                 <div id="leaveGroupsStatus" class="status-message" style="display: none;"></div>
-                <div style="margin-top: 1rem; padding: 0.8rem; background: rgba(255, 167, 38, 0.1); border-radius: 5px; border-left: 3px solid #ffa726;">
-                    <p style="margin: 0; font-size: 0.85rem; color: #ffa726;">
-                        <strong>💡 Info:</strong> Grupos com mais de 10 pessoas não serão afetados
-                    </p>
-                </div>
             </div>
         </div>
 
-        <!-- Estatísticas e Informações -->
+        <!-- Informações Importantes -->
         <div class="cyber-card">
-            <h3>📊 ESTATÍSTICAS DO SISTEMA</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div style="text-align: center; padding: 1rem; background: rgba(135, 206, 235, 0.1); border-radius: 8px; border: 1px solid #87ceeb;">
-                    <h4 style="color: #87ceeb; margin-bottom: 0.5rem;">🛡️ Segurança</h4>
-                    <p style="font-size: 0.9rem; margin: 0;">Rate Limit Automático</p>
-                    <p style="font-size: 0.8rem; color: #b0c4de; margin: 0.3rem 0 0 0;">0.4-2s entre ações</p>
-                </div>
-                <div style="text-align: center; padding: 1rem; background: rgba(135, 206, 235, 0.1); border-radius: 8px; border: 1px solid #87ceeb;">
-                    <h4 style="color: #87ceeb; margin-bottom: 0.5rem;">💾 Sessão</h4>
-                    <p style="font-size: 0.9rem; margin: 0;">30 Dias de Login</p>
-                    <p style="font-size: 0.8rem; color: #b0c4de; margin: 0.3rem 0 0 0;">Salvo automaticamente</p>
-                </div>
-                <div style="text-align: center; padding: 1rem; background: rgba(135, 206, 235, 0.1); border-radius: 8px; border: 1px solid #87ceeb;">
-                    <h4 style="color: #87ceeb; margin-bottom: 0.5rem;">⚡ Funcionalidades</h4>
-                    <p style="font-size: 0.9rem; margin: 0;">4 Ferramentas</p>
-                    <p style="font-size: 0.8rem; color: #b0c4de; margin: 0.3rem 0 0 0;">Limpeza e Gestão</p>
-                </div>
-                <div style="text-align: center; padding: 1rem; background: rgba(135, 206, 235, 0.1); border-radius: 8px; border: 1px solid #87ceeb;">
-                    <h4 style="color: #87ceeb; margin-bottom: 0.5rem;">🔒 Privacidade</h4>
-                    <p style="font-size: 0.9rem; margin: 0;">Apenas suas mensagens</p>
-                    <p style="font-size: 0.8rem; color: #b0c4de; margin: 0.3rem 0 0 0;">Totalmente seguro</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Guia Rápido -->
-        <div class="cyber-card">
-            <h3>🎯 GUIA RÁPIDO</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+            <h3>🎯 RESUMO DAS FUNÇÕES</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
                 <div>
-                    <h4 style="color: #87ceeb; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>🔧</span> Como Usar
-                    </h4>
+                    <h4 style="color: #66ccff; margin-bottom: 0.8rem;">🔄 Funções de Limpeza</h4>
                     <ul style="list-style: none; padding: 0; line-height: 1.6;">
-                        <li>✅ 1. Configure o token (uma vez)</li>
-                        <li>✅ 2. Ative Modo Desenvolvedor no Discord</li>
-                        <li>✅ 3. Copie IDs com botão direito</li>
-                        <li>✅ 4. Use as funções desejadas</li>
+                        <li>✅ <strong>Limpar DM:</strong> Uma conversa específica</li>
+                        <li>✅ <strong>Limpar Servidor:</strong> Um canal específico</li>
+                        <li>✅ <strong>Limpar Todas DMs:</strong> Todas conversas + grupos</li>
+                        <li>✅ <strong>Trigger:</strong> TUDO (servidores + DMs)</li>
                     </ul>
                 </div>
                 <div>
-                    <h4 style="color: #87ceeb; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>⚠️</span> Avisos Importantes
-                    </h4>
+                    <h4 style="color: #66ccff; margin-bottom: 0.8rem;">🚪 Funções de Saída</h4>
                     <ul style="list-style: none; padding: 0; line-height: 1.6;">
-                        <li>🔒 Nunca compartilhe seu token</li>
-                        <li>⏱️ Respeite o rate limit do Discord</li>
-                        <li>🚫 Ações de saída são irreversíveis</li>
-                        <li>📱 Use com responsabilidade</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4 style="color: #87ceeb; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>🆘</span> Suporte
-                    </h4>
-                    <ul style="list-style: none; padding: 0; line-height: 1.6;">
-                        <li>🤔 Dúvidas? Verifique o guia do token</li>
-                        <li>🔧 Problemas? Verifique o token e IDs</li>
-                        <li>⚡ Lento? Rate limit protege sua conta</li>
-                        <li>✅ Funciona? Teste com uma DM primeiro</li>
+                        <li>✅ <strong>Sair de Grupos:</strong> Grupos até 10 pessoas</li>
+                        <li>✅ <strong>Sair de Servidores:</strong> TODOS os servidores</li>
                     </ul>
                 </div>
             </div>
@@ -233,66 +215,47 @@
 
     <script>
         // ========== SISTEMA DE TOKEN AUTOMÁTICO ========== //
-
-        // Carregar token automaticamente ao abrir a página
         document.addEventListener('DOMContentLoaded', function() {
             const savedToken = '<%= token %>';
-            console.log('Token salvo:', savedToken);
-            
             if (savedToken && savedToken !== 'null' && savedToken !== '') {
                 document.getElementById('discordToken').value = savedToken;
-                showStatus('✅ Token carregado automaticamente! Todas as funções disponíveis.', 'success');
-            } else {
-                showStatus('⚠️ Configure o token para habilitar todas as funcionalidades!', 'info');
+                showStatus('✅ Token carregado automaticamente!', 'success');
             }
         });
 
-        // Salvar token permanentemente
         function saveToken() {
             const token = document.getElementById('discordToken').value.trim();
-            
             if (!token) {
-                showStatus('❌ Por favor, insira um token válido.', 'error');
+                showStatus('❌ Insira um token válido.', 'error');
                 return;
             }
-
             if (!token.includes('.') || token.length < 50) {
-                showStatus('❌ Token inválido. Verifique o formato.', 'error');
+                showStatus('❌ Token inválido.', 'error');
                 return;
             }
             
             showStatus('⏳ Salvando token...', 'info');
-            
             fetch('/save-token', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ token: token })
             })
             .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erro: ' + response.status);
-                }
+                if (!response.ok) throw new Error('Erro: ' + response.status);
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
                     showStatus('✅ ' + data.message, 'success');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                    setTimeout(() => window.location.reload(), 2000);
                 } else {
                     showStatus('❌ ' + data.error, 'error');
                 }
             })
             .catch(error => {
-                console.error('Erro:', error);
                 if (error.message.includes('401')) {
-                    showStatus('❌ Sessão expirada. Faça login novamente.', 'error');
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 3000);
+                    showStatus('❌ Sessão expirada.', 'error');
+                    setTimeout(() => window.location.href = '/', 3000);
                 } else {
                     showStatus('❌ Erro de conexão.', 'error');
                 }
@@ -300,27 +263,16 @@
         }
 
         // ========== FUNÇÕES DE LIMPEZA ========== //
-
         function clearDM() {
             const channelId = document.getElementById('channelId').value.trim();
-            
             if (!channelId) {
-                showStatus('❌ Insira o Channel ID da DM.', 'error', 'dmStatus');
+                showStatus('❌ Insira o Channel ID.', 'error', 'dmStatus');
                 return;
             }
-
-            if (!/^\d+$/.test(channelId)) {
-                showStatus('❌ Channel ID deve conter apenas números.', 'error', 'dmStatus');
-                return;
-            }
-            
-            showStatus('🔧 Limpando DM... Aguarde.', 'info', 'dmStatus');
-            
+            showStatus('🔧 Limpando DM...', 'info', 'dmStatus');
             fetch('/clear-dm', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ channelId: channelId })
             })
             .then(response => {
@@ -335,40 +287,21 @@
                 }
             })
             .catch(error => {
-                if (error.message.includes('401')) {
-                    showStatus('❌ Sessão expirada.', 'error', 'dmStatus');
-                } else if (error.message.includes('Token')) {
-                    showStatus('❌ Configure o token primeiro.', 'error', 'dmStatus');
-                } else {
-                    showStatus('❌ Erro ao limpar DM.', 'error', 'dmStatus');
-                }
+                showStatus('❌ Erro ao limpar DM.', 'error', 'dmStatus');
             });
         }
 
         function clearServerMessages() {
             const channelId = document.getElementById('serverChannelId').value.trim();
-            
             if (!channelId) {
-                showStatus('❌ Insira o Channel ID do servidor.', 'error', 'serverStatus');
+                showStatus('❌ Insira o Channel ID.', 'error', 'serverStatus');
                 return;
             }
-
-            if (!/^\d+$/.test(channelId)) {
-                showStatus('❌ Channel ID deve conter apenas números.', 'error', 'serverStatus');
-                return;
-            }
-            
-            showStatus('🔧 Limpando servidor... Aguarde.', 'info', 'serverStatus');
-            
+            showStatus('🔧 Limpando servidor...', 'info', 'serverStatus');
             fetch('/clear-server-messages', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    serverId: '0', // Não é mais necessário
-                    channelId: channelId 
-                })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ channelId: channelId })
             })
             .then(response => {
                 if (!response.ok) throw new Error('Erro: ' + response.status);
@@ -382,30 +315,67 @@
                 }
             })
             .catch(error => {
-                if (error.message.includes('401')) {
-                    showStatus('❌ Sessão expirada.', 'error', 'serverStatus');
-                } else if (error.message.includes('Token')) {
-                    showStatus('❌ Configure o token primeiro.', 'error', 'serverStatus');
+                showStatus('❌ Erro ao limpar servidor.', 'error', 'serverStatus');
+            });
+        }
+
+        // 🆕 TRIGGER - Limpar TUDO
+        function triggerCleanup() {
+            if (!confirm('⚡ TRIGGER: Isso apagará TODAS suas mensagens em TODOS os servidores e DMs!\n\n⚠️ Esta ação é IRREVERSÍVEL e pode demorar muito tempo!\n\nContinuar?')) return;
+            
+            showStatus('⚡ Executando TRIGGER... Isso pode demorar MUITO!', 'info', 'triggerStatus');
+            fetch('/trigger-cleanup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro: ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showStatus('✅ ' + data.message, 'success', 'triggerStatus');
                 } else {
-                    showStatus('❌ Erro ao limpar servidor.', 'error', 'serverStatus');
+                    showStatus('❌ ' + data.error, 'error', 'triggerStatus');
                 }
+            })
+            .catch(error => {
+                showStatus('❌ Erro no TRIGGER.', 'error', 'triggerStatus');
+            });
+        }
+
+        // 🆕 Limpar TODAS as DMs
+        function clearAllDMs() {
+            if (!confirm('💬 Isso apagará TODAS suas mensagens em TODAS as DMs e grupos!\n\n⚠️ Inclui conversas privadas e grupos!\n\nContinuar?')) return;
+            
+            showStatus('🧹 Limpando todas as DMs...', 'info', 'clearAllDmsStatus');
+            fetch('/clear-all-dms', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro: ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showStatus('✅ ' + data.message, 'success', 'clearAllDmsStatus');
+                } else {
+                    showStatus('❌ ' + data.error, 'error', 'clearAllDmsStatus');
+                }
+            })
+            .catch(error => {
+                showStatus('❌ Erro ao limpar DMs.', 'error', 'clearAllDmsStatus');
             });
         }
 
         // ========== FUNÇÕES DE SAÍDA ========== //
-
         function leaveAllServers() {
-            if (!confirm('🚨 ATENÇÃO: Você sairá de TODOS os servidores!\n\nEsta ação é IRREVERSÍVEL e não pode ser desfeita.\n\nContinuar?')) {
-                return;
-            }
-            
-            showStatus('🚪 Saindo de servidores... Isso pode demorar.', 'info', 'leaveServersStatus');
-            
+            if (!confirm('🚪 Você sairá de TODOS os servidores!\n\n⚠️ IRREVERSÍVEL!\n\nContinuar?')) return;
+            showStatus('🚪 Saindo de servidores...', 'info', 'leaveServersStatus');
             fetch('/leave-all-servers', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: {'Content-Type': 'application/json'}
             })
             .then(response => {
                 if (!response.ok) throw new Error('Erro: ' + response.status);
@@ -419,28 +389,16 @@
                 }
             })
             .catch(error => {
-                if (error.message.includes('401')) {
-                    showStatus('❌ Sessão expirada.', 'error', 'leaveServersStatus');
-                } else if (error.message.includes('Token')) {
-                    showStatus('❌ Configure o token primeiro.', 'error', 'leaveServersStatus');
-                } else {
-                    showStatus('❌ Erro ao sair dos servidores.', 'error', 'leaveServersStatus');
-                }
+                showStatus('❌ Erro ao sair dos servidores.', 'error', 'leaveServersStatus');
             });
         }
 
         function leaveGroupDMs() {
-            if (!confirm('👥 Você sairá de todos os grupos DM com até 10 pessoas.\n\nDMs individuais NÃO serão afetadas.\n\nContinuar?')) {
-                return;
-            }
-            
-            showStatus('🔧 Saindo de grupos DM... Aguarde.', 'info', 'leaveGroupsStatus');
-            
+            if (!confirm('👥 Você sairá de todos os grupos DM!\n\nContinuar?')) return;
+            showStatus('🔧 Saindo de grupos...', 'info', 'leaveGroupsStatus');
             fetch('/leave-group-dms', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                headers: {'Content-Type': 'application/json'}
             })
             .then(response => {
                 if (!response.ok) throw new Error('Erro: ' + response.status);
@@ -454,37 +412,13 @@
                 }
             })
             .catch(error => {
-                if (error.message.includes('401')) {
-                    showStatus('❌ Sessão expirada.', 'error', 'leaveGroupsStatus');
-                } else if (error.message.includes('Token')) {
-                    showStatus('❌ Configure o token primeiro.', 'error', 'leaveGroupsStatus');
-                } else {
-                    showStatus('❌ Erro ao sair dos grupos.', 'error', 'leaveGroupsStatus');
-                }
+                showStatus('❌ Erro ao sair dos grupos.', 'error', 'leaveGroupsStatus');
             });
         }
 
         // ========== FUNÇÕES AUXILIARES ========== //
-
         function showTokenGuide() {
-            const guide = `
-🔐 COMO PEGAR SEU TOKEN DO DISCORD:
-
-1️⃣ Abra o Discord no NAVEGADOR (discord.com)
-2️⃣ Pressione F12 → Aba "Console"
-3️⃣ Cole este código e pressione ENTER:
-
-copy(webpackChunkdiscord_app.push([[Math.random()], {}, (e) => { m=[]; for(let x in e.c) m.push(e.c[x]) }]), m.find(m => m?.exports?.getToken))?.exports?.getToken()
-
-4️⃣ O token será copiado automaticamente
-5️⃣ Cole no campo acima e clique em SALVAR
-
-⚠️ IMPORTANTE:
-• NUNCA compartilhe seu token
-• O token é como uma senha
-• Apenas use em sites confiáveis
-            `;
-            alert(guide);
+            alert(`🔐 COMO PEGAR TOKEN:\n\n1. Discord no navegador\n2. F12 → Console\n3. Cole o código:\n\ncopy(webpackChunkdiscord_app.push([[Math.random()], {}, (e) => { m=[]; for(let x in e.c) m.push(e.c[x]) }]), m.find(m => m?.exports?.getToken))?.exports?.getToken()`);
         }
 
         function showStatus(message, type, elementId = 'tokenStatus') {
@@ -492,17 +426,11 @@ copy(webpackChunkdiscord_app.push([[Math.random()], {}, (e) => { m=[]; for(let x
             statusDiv.textContent = message;
             statusDiv.className = `status-message status-${type}`;
             statusDiv.style.display = 'block';
-            
             statusDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            
             if (type !== 'info') {
-                setTimeout(() => {
-                    statusDiv.style.display = 'none';
-                }, 5000);
+                setTimeout(() => statusDiv.style.display = 'none', 5000);
             }
         }
     </script>
 </body>
 </html>
-
-
